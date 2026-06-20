@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: campaignops-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: campaignops
+      POSTGRES_PASSWORD: campaignops
+      POSTGRES_DB: campaignops
+    ports:
+      - "5432:5432"
+    volumes:
+      - campaignops-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campaignops -d campaignops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  campaignops-postgres-data:
+
