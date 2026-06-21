@@ -2,13 +2,13 @@ import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { ActivityModule } from "../activity/activity.module";
 import { PrismaModule } from "../prisma/prisma.module";
-import { UsersController } from "./users.controller";
-import { UsersService } from "./users.service";
+import { ContentController } from "./content.controller";
+import { ContentService } from "./content.service";
 
 @Module({
   imports: [JwtModule.register({}), PrismaModule, ActivityModule],
-  controllers: [UsersController],
-  providers: [UsersService],
-  exports: [UsersService]
+  controllers: [ContentController],
+  providers: [ContentService],
+  exports: [ContentService]
 })
-export class UsersModule {}
+export class ContentModule {}

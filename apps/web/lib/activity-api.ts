@@ -11,6 +11,7 @@ export type ActivityLog = {
   metadataJson: unknown;
   createdAt: string;
   user: {
+    avatarUrl: string | null;
     email: string;
     id: string;
     name: string;

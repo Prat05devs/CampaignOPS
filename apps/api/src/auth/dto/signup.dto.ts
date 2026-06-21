@@ -19,5 +19,8 @@ export class SignupDto {
   @IsOptional()
   @IsString()
   phone?: string;
-}
 
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+}

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "../../components/ui/button";
+import { fileToAvatarDataUrl } from "../../lib/avatar-utils";
 import { signup } from "../../lib/auth-api";
 import { useAuthStore } from "../../stores/auth-store";
 
@@ -21,6 +22,8 @@ type SignupInput = z.infer<typeof signupSchema>;
 
 export function SignupForm() {
   const router = useRouter();
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { hasHydrated, setSession, tokens } = useAuthStore();
   const {
@@ -50,6 +53,7 @@ export function SignupForm() {
     try {
       const response = await signup({
         ...values,
+        avatarUrl: avatarUrl ?? undefined,
         phone: values.phone || undefined
       });
       setSession({
@@ -65,8 +69,41 @@ export function SignupForm() {
     }
   }
 
+  async function handleAvatarChange(file?: File) {
+    setAvatarError(null);
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      setAvatarUrl(await fileToAvatarDataUrl(file));
+    } catch (caughtError) {
+      setAvatarError(caughtError instanceof Error ? caughtError.message : "Unable to use this image.");
+    }
+  }
+
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+      <div className="flex items-center gap-4 rounded-md border border-input bg-white p-3">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-campaign-mist text-sm font-semibold text-campaign-ink">
+          {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : "CO"}
+        </div>
+        <div className="min-w-0 flex-1">
+          <label className="inline-flex cursor-pointer items-center rounded-md border border-input bg-white px-3 py-2 text-sm font-medium transition hover:bg-campaign-mist">
+            Upload profile image
+            <input
+              accept="image/*"
+              className="sr-only"
+              onChange={(event) => void handleAvatarChange(event.target.files?.[0])}
+              type="file"
+            />
+          </label>
+          <p className="mt-1 text-xs text-muted-foreground">Optional. Square profile images look best.</p>
+          {avatarError ? <p className="mt-1 text-xs text-destructive">{avatarError}</p> : null}
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="name">
@@ -138,4 +175,3 @@ export function SignupForm() {
     </form>
   );
 }
-

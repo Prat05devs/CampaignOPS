@@ -26,6 +26,20 @@ export class TasksService {
     });
   }
 
+  async listAcrossEvents(user: AuthenticatedUser, filters: { status?: TaskStatus }) {
+    return this.prisma.task.findMany({
+      where: {
+        event: {
+          organizationId: user.organizationId
+        },
+        status: filters.status
+      },
+      include: this.globalTaskInclude,
+      orderBy: [{ status: "asc" }, { dueAt: "asc" }, { updatedAt: "desc" }],
+      take: 250
+    });
+  }
+
   async create(eventId: string, user: AuthenticatedUser, createTaskDto: CreateTaskDto) {
     await this.assertEventAccess(eventId, user.organizationId);
     await this.assertAssigneeAccess(createTaskDto.assigneeId, user.organizationId);
@@ -142,6 +156,7 @@ export class TasksService {
   private readonly taskInclude = {
     assignee: {
       select: {
+        avatarUrl: true,
         id: true,
         name: true,
         email: true
@@ -149,9 +164,38 @@ export class TasksService {
     },
     createdBy: {
       select: {
+        avatarUrl: true,
         id: true,
         name: true,
         email: true
+      }
+    }
+  } satisfies Prisma.TaskInclude;
+
+  private readonly globalTaskInclude = {
+    assignee: {
+      select: {
+        avatarUrl: true,
+        id: true,
+        name: true,
+        email: true
+      }
+    },
+    createdBy: {
+      select: {
+        avatarUrl: true,
+        id: true,
+        name: true,
+        email: true
+      }
+    },
+    event: {
+      select: {
+        category: true,
+        id: true,
+        scaleTier: true,
+        status: true,
+        title: true
       }
     }
   } satisfies Prisma.TaskInclude;

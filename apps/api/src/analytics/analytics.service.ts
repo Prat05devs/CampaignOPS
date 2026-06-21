@@ -72,6 +72,7 @@ export class AnalyticsService {
         include: {
           user: {
             select: {
+              avatarUrl: true,
               email: true,
               id: true,
               name: true
@@ -138,6 +139,7 @@ export class AnalyticsService {
         include: {
           user: {
             select: {
+              avatarUrl: true,
               email: true,
               id: true,
               name: true

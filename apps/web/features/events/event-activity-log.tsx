@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Activity, CircleDot, Clock, UserRound } from "lucide-react";
+import { Activity, Clock, UserRound } from "lucide-react";
 import { useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { listActivityLogs, type ActivityLog } from "../../lib/activity-api";
@@ -28,8 +28,12 @@ const actionLabels: Record<string, string> = {
   EVENT_UPDATED: "Event updated",
   FILE_DELETED: "File deleted",
   FILE_UPLOADED: "File uploaded",
+  AI_OUTPUT_ACCEPTED: "AI output accepted",
+  AI_OUTPUT_GENERATED: "AI output generated",
+  AI_OUTPUT_UPDATED: "AI output updated",
   OUTREACH_DRAFT_CREATED: "Outreach draft created",
   OUTREACH_DRAFT_UPDATED: "Outreach draft updated",
+  PROFILE_UPDATED: "Profile updated",
   TASK_CREATED: "Task created",
   TASK_STATUS_CHANGED: "Task status changed",
   TASK_UPDATED: "Task updated",
@@ -137,10 +141,8 @@ function ActivityRow({ log }: { log: ActivityLog }) {
   const metadata = toMetadata(log.metadataJson);
 
   return (
-    <article className="grid gap-3 rounded-md border border-campaign-mist bg-white p-3 md:grid-cols-[32px_1fr_170px] md:items-start">
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-campaign-mist text-campaign-ink/70">
-        <CircleDot className="h-4 w-4" />
-      </div>
+    <article className="grid gap-3 rounded-md border border-campaign-mist bg-white p-3 md:grid-cols-[40px_1fr_170px] md:items-start">
+      <AvatarCircle avatarUrl={log.user?.avatarUrl ?? null} name={log.user?.name ?? "System"} />
       <div className="min-w-0">
         <p className="text-sm font-semibold">{actionLabels[log.action] ?? log.action.replaceAll("_", " ")}</p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -150,6 +152,17 @@ function ActivityRow({ log }: { log: ActivityLog }) {
       </div>
       <p className="text-xs text-muted-foreground md:text-right">{formatDateTime(log.createdAt)}</p>
     </article>
+  );
+}
+
+function AvatarCircle({ avatarUrl, name }: { avatarUrl: string | null; name: string }) {
+  return (
+    <span
+      className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-campaign-mist text-xs font-semibold text-campaign-ink/70"
+      title={name}
+    >
+      {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : getInitials(name)}
+    </span>
   );
 }
 
@@ -186,4 +199,13 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function getInitials(value: string) {
+  return value
+    .split(" ")
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }

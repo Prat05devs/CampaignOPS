@@ -36,6 +36,7 @@ export class AuthService {
     const { organization, user } = await this.prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
+          avatarUrl: signupDto.avatarUrl,
           email: signupDto.email,
           name: signupDto.name,
           passwordHash,
@@ -227,8 +228,16 @@ export class AuthService {
     }
   }
 
-  private toSafeUser(user: { id: string; email: string; name: string; phone: string | null; designation?: string | null }) {
+  private toSafeUser(user: {
+    avatarUrl?: string | null;
+    designation?: string | null;
+    email: string;
+    id: string;
+    name: string;
+    phone: string | null;
+  }) {
     return {
+      avatarUrl: user.avatarUrl ?? null,
       id: user.id,
       email: user.email,
       name: user.name,

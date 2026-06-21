@@ -2,9 +2,11 @@ import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { ActivityModule } from "./activity/activity.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
+import { AiModule } from "./ai/ai.module";
 import { AuthModule } from "./auth/auth.module";
 import { BudgetModule } from "./budget/budget.module";
 import { ContactsModule } from "./contacts/contacts.module";
+import { ContentModule } from "./content/content.module";
 import { EventsModule } from "./events/events.module";
 import { FilesModule } from "./files/files.module";
 import { HealthModule } from "./health/health.module";
@@ -23,6 +25,7 @@ import { VendorsModule } from "./vendors/vendors.module";
     PrismaModule,
     ActivityModule,
     AnalyticsModule,
+    AiModule,
     HealthModule,
     AuthModule,
     UsersModule,
@@ -31,6 +34,7 @@ import { VendorsModule } from "./vendors/vendors.module";
     TasksModule,
     BudgetModule,
     ContactsModule,
+    ContentModule,
     VendorsModule,
     OutreachModule,
     FilesModule

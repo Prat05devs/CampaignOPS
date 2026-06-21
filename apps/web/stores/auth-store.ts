@@ -15,6 +15,7 @@ type AuthState = {
   tokens: AuthTokens | null;
   setHasHydrated: (hasHydrated: boolean) => void;
   setTokens: (tokens: AuthTokens) => void;
+  setUser: (user: AuthUser) => void;
   setSession: (session: {
     user: AuthUser;
     organization?: AuthOrganization | null;
@@ -36,6 +37,7 @@ export const useAuthStore = create<AuthState>()(
       tokens: null,
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
       setTokens: (tokens) => set({ tokens }),
+      setUser: (user) => set({ user }),
       setSession: (session) =>
         set({
           user: session.user,

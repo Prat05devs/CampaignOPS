@@ -1,6 +1,7 @@
 import { apiRequest } from "./api-client";
 
 export type AuthUser = {
+  avatarUrl: string | null;
   id: string;
   email: string;
   name: string;
@@ -45,6 +46,7 @@ export function signup(input: {
   email: string;
   password: string;
   organizationName: string;
+  avatarUrl?: string;
   phone?: string;
 }) {
   return apiRequest<SignupResponse>("/auth/signup", {

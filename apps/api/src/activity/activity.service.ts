@@ -68,6 +68,7 @@ export class ActivityService {
   private readonly activityLogInclude = {
     user: {
       select: {
+        avatarUrl: true,
         email: true,
         id: true,
         name: true
