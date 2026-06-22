@@ -7,15 +7,32 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
   const port = configService.get<number>("PORT", 4000);
-  const webOrigins = configService
-    .get<string>("WEB_ORIGINS", "http://localhost:3000,http://localhost:3001")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+  const normalizeOrigin = (origin: string) => {
+    try {
+      return new URL(origin).origin;
+    } catch {
+      return origin.trim().replace(/\/+$/, "");
+    }
+  };
+  const allowedOrigins = new Set(
+    configService
+      .get<string>("WEB_ORIGINS", "http://localhost:3000,http://localhost:3001")
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean)
+      .map(normalizeOrigin)
+  );
 
   app.setGlobalPrefix("api");
   app.enableCors({
-    origin: webOrigins,
+    origin(origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
+      if (!origin || allowedOrigins.has(normalizeOrigin(origin))) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     credentials: true
   });
   app.useGlobalPipes(
