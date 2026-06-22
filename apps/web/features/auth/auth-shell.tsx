@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandLogo } from "../../components/brand-logo";
 
 export function AuthShell({
   children,
@@ -20,9 +21,7 @@ export function AuthShell({
       <div className="grid min-h-screen lg:grid-cols-[0.95fr_1.05fr]">
         <section className="hidden border-r border-campaign-mist bg-campaign-ink px-10 py-10 text-campaign-cream lg:flex lg:flex-col lg:justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-campaign-orange text-sm font-semibold">
-              CO
-            </div>
+            <BrandLogo className="h-10 w-10" />
             <div>
               <p className="text-sm font-semibold">CampaignOps</p>
               <p className="text-xs text-campaign-cream/65">Operations command centre</p>
@@ -56,4 +55,3 @@ export function AuthShell({
     </main>
   );
 }
-

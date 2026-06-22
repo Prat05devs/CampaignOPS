@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
+import { BrandLogo } from "../../components/brand-logo";
+import { MobileBottomNav } from "../../components/mobile-bottom-nav";
 import { logout, refreshSession } from "../../lib/auth-api";
 import { ApiError } from "../../lib/api-client";
 import { listEvents, type CampaignEvent, type EventCategory, type EventScaleTier } from "../../lib/events-api";
@@ -158,13 +160,11 @@ export function WorkspaceSectionShell({ section }: WorkspaceSectionShellProps) {
 
   return (
     <main className="min-h-screen bg-[#E4E4E4] text-[#10141A]">
-      <div className="flex min-h-screen gap-3 p-3 lg:gap-5 lg:p-5">
+      <div className="flex min-h-screen gap-2 p-2 pb-24 sm:gap-3 sm:p-3 sm:pb-24 lg:gap-5 lg:p-5">
         <aside className="group/sidebar hidden w-16 shrink-0 flex-col justify-between overflow-hidden rounded-md border border-white/70 bg-white/45 p-2 shadow-[0_24px_80px_rgba(16,20,26,0.10)] backdrop-blur-xl transition-all duration-300 ease-out hover:w-56 lg:flex">
           <div className="flex w-full flex-col gap-4">
             <div className="flex h-11 w-full items-center gap-3 overflow-hidden">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#10141A] text-sm font-semibold text-white">
-                CO
-              </div>
+              <BrandLogo className="h-11 w-11" />
               <div className="min-w-0 opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
                 <p className="truncate text-sm font-semibold">CampaignOps</p>
                 <p className="truncate text-xs text-[#10141A]/55">{organization?.name ?? "Command centre"}</p>
@@ -209,12 +209,10 @@ export function WorkspaceSectionShell({ section }: WorkspaceSectionShellProps) {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="mb-4 rounded-md border border-white/70 bg-white/55 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.08)] backdrop-blur-xl">
+          <header className="mb-3 rounded-md border border-white/70 bg-white/55 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.08)] backdrop-blur-xl sm:mb-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#10141A] text-sm font-semibold text-white lg:hidden">
-                  CO
-                </div>
+                <BrandLogo className="h-11 w-11 lg:hidden" />
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-[#10141A]/55">{organization?.name ?? "Command centre"}</p>
                   <h1 className="text-2xl font-semibold md:text-3xl">{sectionTitles[section]}</h1>
@@ -226,7 +224,7 @@ export function WorkspaceSectionShell({ section }: WorkspaceSectionShellProps) {
                   className="flex min-w-0 items-center gap-2 rounded-full border border-white/70 bg-white/50 px-2 py-1.5 pr-3 transition hover:bg-white"
                   href="/profile"
                 >
-                  <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "CO"} />
+                  <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "User"} />
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-medium">{user?.name}</span>
                     <span className="block text-[11px] text-[#10141A]/55">{role}</span>
@@ -244,18 +242,18 @@ export function WorkspaceSectionShell({ section }: WorkspaceSectionShellProps) {
             </div>
           </header>
 
-          <div className="space-y-4">
-            <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl md:p-5">
+          <div className="space-y-3 sm:space-y-4">
+            <section className="rounded-md border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl sm:p-4 md:p-5">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-3xl">
                   <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/55 px-3 py-1 text-xs font-medium text-[#10141A]/65">
                     <SectionIcon className="h-3.5 w-3.5" />
                     {meta.eyebrow}
                   </div>
-                  <h2 className="text-3xl font-semibold md:text-4xl">{sectionTitles[section]} by event workspace</h2>
+                  <h2 className="text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">{sectionTitles[section]} by event workspace</h2>
                   <p className="mt-3 max-w-2xl text-sm leading-6 text-[#10141A]/60">{meta.description}</p>
                 </div>
-                <div className="grid min-w-[260px] grid-cols-2 gap-2 rounded-md border border-white/70 bg-white/55 p-2">
+                <div className="grid w-full grid-cols-2 gap-2 rounded-md border border-white/70 bg-white/55 p-2 sm:min-w-[260px] lg:w-auto">
                   <MiniMetric label="Total events" value={String(summary.total)} />
                   <MiniMetric label="Active" value={String(summary.active)} />
                   <MiniMetric label="Completed" value={String(summary.completed)} />
@@ -278,13 +276,14 @@ export function WorkspaceSectionShell({ section }: WorkspaceSectionShellProps) {
           </div>
         </section>
       </div>
+      <MobileBottomNav activeHref={`/${section}`} />
     </main>
   );
 }
 
 function EventsSection({ events, isFetching }: { events: CampaignEvent[]; isFetching: boolean }) {
   return (
-    <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_18px_60px_rgba(16,20,26,0.08)] backdrop-blur-xl">
+    <section className="rounded-md border border-white/70 bg-white/45 p-3 shadow-[0_18px_60px_rgba(16,20,26,0.08)] backdrop-blur-xl sm:p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">All Events</h2>
@@ -293,7 +292,7 @@ function EventsSection({ events, isFetching }: { events: CampaignEvent[]; isFetc
         <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#10141A]/55">{events.length}</span>
       </div>
       {events.length ? (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {events.map((event) => (
             <EventSummaryCard event={event} key={event.id} />
           ))}
@@ -317,7 +316,7 @@ function EventScopedSection({
   section: Exclude<WorkspaceSectionShellProps["section"], "events">;
 }) {
   return (
-    <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_18px_60px_rgba(16,20,26,0.08)] backdrop-blur-xl">
+    <section className="rounded-md border border-white/70 bg-white/45 p-3 shadow-[0_18px_60px_rgba(16,20,26,0.08)] backdrop-blur-xl sm:p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">{sectionTitles[section]} Workspaces</h2>
@@ -328,7 +327,7 @@ function EventScopedSection({
         </span>
       </div>
       {events.length ? (
-        <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {events.map((event) => (
             <EventSectionLink event={event} key={event.id} section={section} />
           ))}

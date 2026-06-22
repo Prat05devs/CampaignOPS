@@ -20,6 +20,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { BrandLogo } from "../../components/brand-logo";
+import { MobileBottomNav } from "../../components/mobile-bottom-nav";
 import { getDashboardAnalytics } from "../../lib/analytics-api";
 import { logout, refreshSession } from "../../lib/auth-api";
 import { ApiError } from "../../lib/api-client";
@@ -219,13 +221,11 @@ export function DashboardShell() {
 
   return (
     <main className="min-h-screen bg-[#E4E4E4] text-[#10141A]">
-      <div className="flex min-h-screen gap-3 p-3 lg:gap-5 lg:p-5">
+      <div className="flex min-h-screen gap-2 p-2 pb-24 sm:gap-3 sm:p-3 sm:pb-24 lg:gap-5 lg:p-5">
         <aside className="group/sidebar hidden w-16 shrink-0 flex-col justify-between overflow-hidden rounded-md border border-white/70 bg-white/45 p-2 shadow-[0_24px_80px_rgba(16,20,26,0.10)] backdrop-blur-xl transition-all duration-300 ease-out hover:w-56 lg:flex">
           <div className="flex w-full flex-col gap-4">
             <div className="flex h-11 w-full items-center gap-3 overflow-hidden">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#10141A] text-sm font-semibold text-white">
-                CO
-              </div>
+              <BrandLogo className="h-11 w-11" />
               <div className="min-w-0 opacity-0 transition-opacity duration-200 group-hover/sidebar:opacity-100">
                 <p className="truncate text-sm font-semibold">CampaignOps</p>
                 <p className="truncate text-xs text-[#10141A]/55">{organization?.name ?? "Command centre"}</p>
@@ -270,24 +270,22 @@ export function DashboardShell() {
         </aside>
 
         <section className="min-w-0 flex-1">
-          <header className="mb-4 rounded-md border border-white/70 bg-white/55 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.08)] backdrop-blur-xl">
+          <header className="mb-3 rounded-md border border-white/70 bg-white/55 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.08)] backdrop-blur-xl sm:mb-4">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-[#10141A] text-sm font-semibold text-white lg:hidden">
-                  CO
-                </div>
+                <BrandLogo className="h-11 w-11 lg:hidden" />
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-[#10141A]/55">{organization?.name ?? "Command centre"}</p>
                   <h1 className="text-2xl font-semibold md:text-3xl">Main Dashboard</h1>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 xl:justify-end">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex sm:items-center sm:justify-between xl:justify-end">
                 <Link
                   className="flex min-w-0 items-center gap-2 rounded-full border border-white/70 bg-white/50 px-2 py-1.5 pr-3 transition hover:bg-white"
                   href="/profile"
                 >
-                  <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "CO"} size="sm" />
+                  <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "User"} size="sm" />
                   <span className="min-w-0">
                     <span className="block truncate text-xs font-medium">{user?.name}</span>
                     <span className="block text-[11px] text-[#10141A]/55">{role}</span>
@@ -295,7 +293,7 @@ export function DashboardShell() {
                 </Link>
                 {canManageOperations ? (
                   <button
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#10141A] px-4 text-sm font-medium text-white shadow-[0_16px_36px_rgba(16,20,26,0.25)] transition hover:bg-black"
+                    className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-[#10141A] px-4 text-sm font-medium text-white shadow-[0_16px_36px_rgba(16,20,26,0.25)] transition hover:bg-black sm:col-span-1"
                     onClick={() => setIsNewEventOpen((current) => !current)}
                     type="button"
                   >
@@ -315,22 +313,22 @@ export function DashboardShell() {
             </div>
           </header>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-              <div className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl md:p-5">
+              <div className="rounded-md border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl sm:p-4 md:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="max-w-2xl">
                     <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/55 px-3 py-1 text-xs font-medium text-[#10141A]/65">
                       <Route className="h-3.5 w-3.5" />
                       CampaignOps workspace
                     </div>
-                    <h2 className="text-3xl font-semibold md:text-4xl">Event operations command centre</h2>
+                    <h2 className="text-2xl font-semibold leading-tight sm:text-3xl md:text-4xl">Event operations command centre</h2>
                     <p className="mt-3 max-w-xl text-sm leading-6 text-[#10141A]/60">
                       Track event readiness, task pressure, budget movement, and recent decisions from one live workspace.
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {activityUsers.length ? (
                       <div className="flex -space-x-2">
                         {activityUsers.map((activityUser, index) => (
@@ -344,7 +342,7 @@ export function DashboardShell() {
                         ))}
                       </div>
                     ) : (
-                      <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "CO"} size="md" />
+                      <AvatarCircle avatarUrl={user?.avatarUrl ?? null} name={user?.name ?? "User"} size="md" />
                     )}
                     <Link
                       className="flex h-11 w-11 items-center justify-center rounded-full border border-[#10141A]/15 bg-white/55 text-[#10141A] transition hover:bg-white"
@@ -363,14 +361,14 @@ export function DashboardShell() {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
                   {metrics.map((metric) => (
                     <MetricCard icon={metric.icon} key={metric.label} label={metric.label} tone={metric.tone} value={metric.value} />
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl md:p-5">
+              <div className="rounded-md border border-white/70 bg-white/45 p-3 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl sm:p-4 md:p-5">
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
                     <h2 className="text-base font-semibold">Workspace Flow</h2>
@@ -385,18 +383,18 @@ export function DashboardShell() {
                   </Link>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3">
                   {flowStages.map((stage) => (
                     <div
                       className={
                         stage.tone === "black"
-                          ? "min-h-28 rounded-md bg-[#10141A] p-4 text-white shadow-[0_18px_40px_rgba(16,20,26,0.22)]"
-                          : "min-h-28 rounded-md border border-white/70 bg-white/55 p-4 text-[#10141A] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]"
+                          ? "min-h-24 rounded-md bg-[#10141A] p-3 text-white shadow-[0_18px_40px_rgba(16,20,26,0.22)] sm:min-h-28 sm:p-4"
+                          : "min-h-24 rounded-md border border-white/70 bg-white/55 p-3 text-[#10141A] shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] sm:min-h-28 sm:p-4"
                       }
                       key={stage.label}
                     >
                       <p className={stage.tone === "black" ? "text-xs text-white/65" : "text-xs text-[#10141A]/55"}>{stage.label}</p>
-                      <p className="mt-4 text-3xl font-semibold">{stage.value}</p>
+                      <p className="mt-4 text-2xl font-semibold sm:text-3xl">{stage.value}</p>
                       <div className={`mt-3 h-1 rounded-full ${metricTone[stage.tone].line}`} />
                     </div>
                   ))}
@@ -478,7 +476,7 @@ export function DashboardShell() {
                   <h2 className="text-base font-semibold">Active Events</h2>
                   <p className="text-xs text-[#10141A]/55">{eventsQuery.isFetching ? "Syncing events" : "Live event workspace"}</p>
                 </div>
-                <div className="flex gap-2 overflow-x-auto rounded-md bg-white/45 p-1 text-sm">
+                <div className="-mx-1 flex gap-2 overflow-x-auto rounded-md bg-white/45 p-1 text-sm sm:mx-0">
                   <button
                     className={
                       categoryFilter === "ALL"
@@ -562,9 +560,9 @@ export function DashboardShell() {
                 </div>
                 <div className="space-y-2">
                   {SCALE_TIERS.map((tier) => (
-                    <div className="flex items-center justify-between gap-3 rounded-md border border-white/70 bg-white/55 px-3 py-2" key={tier.id}>
+                    <div className="flex flex-col gap-1 rounded-md border border-white/70 bg-white/55 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3" key={tier.id}>
                       <span className="text-sm font-medium">{tier.label}</span>
-                      <span className="text-xs text-[#10141A]/55">{tier.description}</span>
+                      <span className="text-xs text-[#10141A]/55 sm:text-right">{tier.description}</span>
                     </div>
                   ))}
                 </div>
@@ -573,6 +571,7 @@ export function DashboardShell() {
           </div>
         </section>
       </div>
+      <MobileBottomNav activeHref="/dashboard" />
     </main>
   );
 }
@@ -589,17 +588,17 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <div className="rounded-md border border-white/70 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
+    <div className="rounded-md border border-white/70 bg-white/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] sm:p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-xs font-medium text-[#10141A]/55">{label}</p>
-          <p className="mt-2 text-2xl font-semibold">{value}</p>
+          <p className="mt-2 text-xl font-semibold sm:text-2xl">{value}</p>
         </div>
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${metricTone[tone].icon}`}>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full sm:h-11 sm:w-11 ${metricTone[tone].icon}`}>
           <Icon className="h-4 w-4" />
         </div>
       </div>
-      <div className={`mt-4 h-1 rounded-full ${metricTone[tone].line}`} />
+      <div className={`mt-3 h-1 rounded-full sm:mt-4 ${metricTone[tone].line}`} />
     </div>
   );
 }

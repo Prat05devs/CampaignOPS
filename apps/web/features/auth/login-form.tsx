@@ -47,6 +47,7 @@ export function LoginForm() {
         user: response.user,
         organization: response.organization,
         activeOrganizationId: response.activeOrganizationId,
+        memberships: response.memberships,
         role: response.role,
         tokens: response.tokens
       });

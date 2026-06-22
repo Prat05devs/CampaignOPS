@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ApiError } from "../../lib/api-client";
 import { fileToAvatarDataUrl } from "../../lib/avatar-utils";
-import { logout, refreshSession } from "../../lib/auth-api";
+import { listWorkspaces, logout, refreshSession, switchWorkspace } from "../../lib/auth-api";
 import {
   createOrganizationInvitation,
   getOrganization,
@@ -30,6 +30,7 @@ export function ProfileShell() {
     organization,
     role,
     setOrganization,
+    setSession,
     setTokens,
     setUser,
     tokens,
@@ -91,6 +92,12 @@ export function ProfileShell() {
     enabled: Boolean(activeOrganizationId && tokens?.accessToken && role !== "MEMBER"),
     queryKey: ["organization-members", activeOrganizationId],
     queryFn: () => withSessionRefresh((accessToken) => listOrganizationMembers(activeOrganizationId!, accessToken))
+  });
+
+  const workspacesQuery = useQuery({
+    enabled: Boolean(tokens?.accessToken),
+    queryKey: ["auth-workspaces", user?.id],
+    queryFn: () => withSessionRefresh((accessToken) => listWorkspaces(accessToken))
   });
 
   const invitationsQuery = useQuery({
@@ -218,6 +225,23 @@ export function ProfileShell() {
     }
   });
 
+  const switchWorkspaceMutation = useMutation({
+    mutationFn: async (organizationId: string) => {
+      return withSessionRefresh((accessToken) => switchWorkspace(organizationId, accessToken));
+    },
+    onSuccess: (session) => {
+      setSuccessMessage(`Switched to ${session.organization.name}.`);
+      setSession({
+        user: session.user,
+        organization: session.organization,
+        activeOrganizationId: session.activeOrganizationId,
+        memberships: session.memberships,
+        role: session.role,
+        tokens: session.tokens
+      });
+    }
+  });
+
   async function handleAvatarChange(file?: File) {
     setAvatarError(null);
     setSuccessMessage(null);
@@ -269,6 +293,7 @@ export function ProfileShell() {
 
   const members = membersQuery.data ?? [];
   const invitations = invitationsQuery.data ?? [];
+  const workspaces = workspacesQuery.data ?? [];
   const canManageOrganization = role === "ADMIN";
   const currentOrganization = organizationQuery.data ?? organization;
 
@@ -297,6 +322,80 @@ export function ProfileShell() {
             </button>
           </div>
         </header>
+
+        <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
+          <div className="mb-3 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-[#10141A]/55" />
+              <h2 className="text-lg font-semibold">My Workspaces</h2>
+            </div>
+            <p className="text-xs text-[#10141A]/55">
+              Active workspace controls the events, tasks, vendors, contacts, and budgets you see.
+            </p>
+          </div>
+
+          {workspacesQuery.isLoading ? (
+            <p className="rounded-md border border-white/70 bg-white/45 p-3 text-sm text-[#10141A]/55">
+              Loading workspaces...
+            </p>
+          ) : workspacesQuery.isError ? (
+            <p className="rounded-md border border-[#CE6969]/30 bg-[#CE6969]/10 p-3 text-sm text-[#9E3F3F]">
+              {workspacesQuery.error.message}
+            </p>
+          ) : workspaces.length ? (
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {workspaces.map((workspace) => {
+                const isActive = workspace.activeOrganizationId === activeOrganizationId;
+
+                return (
+                  <button
+                    className={
+                      isActive
+                        ? "rounded-md border border-[#10141A] bg-[#10141A] p-3 text-left text-white shadow-[0_16px_36px_rgba(16,20,26,0.20)]"
+                        : "rounded-md border border-white/70 bg-white/55 p-3 text-left text-[#10141A] transition hover:bg-white"
+                    }
+                    disabled={isActive || switchWorkspaceMutation.isPending}
+                    key={workspace.activeOrganizationId}
+                    onClick={() => switchWorkspaceMutation.mutate(workspace.activeOrganizationId)}
+                    type="button"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={
+                          isActive
+                            ? "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white text-sm font-semibold text-[#10141A]"
+                            : "flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#10141A] text-sm font-semibold text-white"
+                        }
+                      >
+                        {workspace.organization.profileImageUrl ? (
+                          <img alt="" className="h-full w-full object-cover" src={workspace.organization.profileImageUrl} />
+                        ) : (
+                          <span>{getInitials(workspace.organization.name)}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">{workspace.organization.name}</p>
+                        <p className={isActive ? "text-xs text-white/65" : "text-xs text-[#10141A]/55"}>
+                          {roleLabel(workspace.role)}{isActive ? " / Active" : ""}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="rounded-md border border-white/70 bg-white/45 p-3 text-sm text-[#10141A]/55">
+              No workspaces available.
+            </p>
+          )}
+
+          {switchWorkspaceMutation.isError ? (
+            <p className="mt-3 rounded-md border border-[#CE6969]/30 bg-[#CE6969]/10 px-3 py-2 text-sm text-[#9E3F3F]">
+              {switchWorkspaceMutation.error.message}
+            </p>
+          ) : null}
+        </section>
 
         <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
           <section className="rounded-md border border-white/70 bg-white/45 p-5 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
@@ -425,7 +524,7 @@ export function ProfileShell() {
                   {orgImageUrl ? (
                     <img alt="" className="h-full w-full object-cover" src={orgImageUrl} />
                   ) : (
-                    <span>{getInitials(orgName || currentOrganization?.name || "CO")}</span>
+                    <span>{getInitials(orgName || currentOrganization?.name || "CampaignOps")}</span>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">

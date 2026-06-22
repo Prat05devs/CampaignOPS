@@ -5,6 +5,7 @@ import { AcceptInvitationDto } from "./dto/accept-invitation.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { SignupDto } from "./dto/signup.dto";
+import { SwitchOrganizationDto } from "./dto/switch-organization.dto";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { AuthenticatedUser } from "./types/authenticated-user";
 
@@ -20,6 +21,18 @@ export class AuthController {
   @Post("login")
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("workspaces")
+  listWorkspaces(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.listWorkspaces(user);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("switch-workspace")
+  switchWorkspace(@Body() switchOrganizationDto: SwitchOrganizationDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.authService.switchOrganization(switchOrganizationDto, user);
   }
 
   @Get("invitations/:token")

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { BrandLogo } from "../../components/brand-logo";
 import { Button } from "../../components/ui/button";
 import { fileToAvatarDataUrl } from "../../lib/avatar-utils";
 import { acceptInvitation, acceptInvitationWithCurrentUser, getInvitationPreview } from "../../lib/auth-api";
@@ -56,6 +57,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
         user: response.user,
         organization: response.organization,
         activeOrganizationId: response.activeOrganizationId,
+        memberships: response.memberships,
         role: response.role,
         tokens: response.tokens
       });
@@ -80,6 +82,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
         user: response.user,
         organization: response.organization,
         activeOrganizationId: response.activeOrganizationId,
+        memberships: response.memberships,
         role: response.role,
         tokens: response.tokens
       });
@@ -184,7 +187,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
 
       <div className="flex items-center gap-4 rounded-md border border-input bg-white p-3">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-campaign-mist text-sm font-semibold text-campaign-ink">
-          {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : "CO"}
+          {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : <BrandLogo className="h-16 w-16 rounded-full" />}
         </div>
         <div className="min-w-0 flex-1">
           <label className="inline-flex cursor-pointer items-center rounded-md border border-input bg-white px-3 py-2 text-sm font-medium transition hover:bg-campaign-mist">

@@ -7,7 +7,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CampaignOps",
-  description: "AI-assisted event and campaign operations platform"
+  description: "AI-assisted event and campaign operations platform",
+  icons: {
+    apple: "/CampaignOPSlogo.png",
+    icon: "/CampaignOPSlogo.png"
+  }
 };
 
 export default function RootLayout({
@@ -23,4 +27,3 @@ export default function RootLayout({
     </html>
   );
 }
-

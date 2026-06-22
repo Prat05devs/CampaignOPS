@@ -22,9 +22,16 @@ export type AuthTokens = {
   refreshToken: string;
 };
 
+export type AuthMembership = {
+  activeOrganizationId: string;
+  organization: AuthOrganization;
+  role: "ADMIN" | "MANAGER" | "MEMBER";
+};
+
 export type LoginResponse = {
   user: AuthUser;
   activeOrganizationId: string;
+  memberships?: AuthMembership[];
   organization: AuthOrganization;
   role: "ADMIN" | "MANAGER" | "MEMBER";
   tokens: AuthTokens;
@@ -32,7 +39,10 @@ export type LoginResponse = {
 
 export type SignupResponse = {
   user: AuthUser;
+  activeOrganizationId: string;
+  memberships?: AuthMembership[];
   organization: AuthOrganization;
+  role: "ADMIN" | "MANAGER" | "MEMBER";
   tokens: AuthTokens;
 };
 
@@ -47,10 +57,24 @@ export type InvitationPreview = {
   status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 };
 
-export function login(input: { email: string; password: string }) {
+export function login(input: { email: string; password: string; organizationId?: string }) {
   return apiRequest<LoginResponse>("/auth/login", {
     method: "POST",
     body: JSON.stringify(input)
+  });
+}
+
+export function listWorkspaces(accessToken: string) {
+  return apiRequest<AuthMembership[]>("/auth/workspaces", {
+    accessToken
+  });
+}
+
+export function switchWorkspace(organizationId: string, accessToken: string) {
+  return apiRequest<LoginResponse>("/auth/switch-workspace", {
+    accessToken,
+    body: JSON.stringify({ organizationId }),
+    method: "POST"
   });
 }
 

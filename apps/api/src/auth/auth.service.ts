@@ -9,6 +9,7 @@ import { AcceptInvitationDto } from "./dto/accept-invitation.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { SignupDto } from "./dto/signup.dto";
+import { SwitchOrganizationDto } from "./dto/switch-organization.dto";
 import { AuthenticatedUser } from "./types/authenticated-user";
 
 type TokenPair = {
@@ -78,7 +79,16 @@ export class AuthService {
 
     return {
       user: this.toSafeUser(user),
+      activeOrganizationId: organization.id,
+      memberships: this.toMemberships([
+        {
+          organization,
+          organizationId: organization.id,
+          role: OrganizationRole.ADMIN
+        }
+      ]),
       organization,
+      role: OrganizationRole.ADMIN,
       tokens
     };
   }
@@ -93,8 +103,7 @@ export class AuthService {
           },
           orderBy: {
             createdAt: "asc"
-          },
-          take: 1
+          }
         }
       }
     });
@@ -109,7 +118,9 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password.");
     }
 
-    const membership = user.organizationMembers[0];
+    const membership = loginDto.organizationId
+      ? user.organizationMembers.find((item) => item.organizationId === loginDto.organizationId)
+      : user.organizationMembers[0];
 
     if (!membership) {
       throw new UnauthorizedException("User is not attached to an organization.");
@@ -127,6 +138,67 @@ export class AuthService {
     return {
       user: this.toSafeUser(user),
       activeOrganizationId: membership.organizationId,
+      memberships: this.toMemberships(user.organizationMembers),
+      organization: membership.organization,
+      role: membership.role,
+      tokens
+    };
+  }
+
+  async listWorkspaces(currentUser: AuthenticatedUser) {
+    const memberships = await this.prisma.organizationMember.findMany({
+      where: { userId: currentUser.sub },
+      include: {
+        organization: true
+      },
+      orderBy: {
+        createdAt: "asc"
+      }
+    });
+
+    return this.toMemberships(memberships);
+  }
+
+  async switchOrganization(switchOrganizationDto: SwitchOrganizationDto, currentUser: AuthenticatedUser) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: currentUser.sub },
+      include: {
+        organizationMembers: {
+          include: {
+            organization: true
+          },
+          orderBy: {
+            createdAt: "asc"
+          }
+        }
+      }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User session is not valid.");
+    }
+
+    const membership = user.organizationMembers.find(
+      (item) => item.organizationId === switchOrganizationDto.organizationId
+    );
+
+    if (!membership) {
+      throw new NotFoundException("Workspace not found.");
+    }
+
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      organizationId: membership.organizationId,
+      role: membership.role
+    });
+
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      user: this.toSafeUser(user),
+      activeOrganizationId: membership.organizationId,
+      memberships: this.toMemberships(user.organizationMembers),
       organization: membership.organization,
       role: membership.role,
       tokens
@@ -254,6 +326,13 @@ export class AuthService {
 
     return {
       activeOrganizationId: organization.id,
+      memberships: this.toMemberships([
+        {
+          organization,
+          organizationId: organization.id,
+          role: invitation.role
+        }
+      ]),
       organization,
       role: invitation.role,
       tokens,
@@ -329,6 +408,16 @@ export class AuthService {
       return acceptedInvitation.organization;
     });
 
+    const memberships = await this.prisma.organizationMember.findMany({
+      where: { userId: user.id },
+      include: {
+        organization: true
+      },
+      orderBy: {
+        createdAt: "asc"
+      }
+    });
+
     const tokens = await this.issueTokens({
       sub: user.id,
       email: user.email,
@@ -340,6 +429,7 @@ export class AuthService {
 
     return {
       activeOrganizationId: organization.id,
+      memberships: this.toMemberships(memberships),
       organization,
       role: invitation.role,
       tokens,
@@ -484,5 +574,25 @@ export class AuthService {
       phone: user.phone,
       designation: user.designation ?? null
     };
+  }
+
+  private toMemberships(
+    memberships: Array<{
+      organization: {
+        defaultCurrency: string;
+        id: string;
+        name: string;
+        profileImageUrl: string | null;
+        timezone: string;
+      };
+      organizationId: string;
+      role: OrganizationRole;
+    }>
+  ) {
+    return memberships.map((membership) => ({
+      activeOrganizationId: membership.organizationId,
+      organization: membership.organization,
+      role: membership.role
+    }));
   }
 }

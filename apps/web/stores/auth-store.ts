@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { AuthOrganization, AuthTokens, AuthUser } from "../lib/auth-api";
+import { AuthMembership, AuthOrganization, AuthTokens, AuthUser } from "../lib/auth-api";
 
 type AuthRole = "ADMIN" | "MANAGER" | "MEMBER";
 
@@ -11,6 +11,7 @@ type AuthState = {
   user: AuthUser | null;
   organization: AuthOrganization | null;
   activeOrganizationId: string | null;
+  memberships: AuthMembership[];
   role: AuthRole | null;
   tokens: AuthTokens | null;
   setHasHydrated: (hasHydrated: boolean) => void;
@@ -21,6 +22,7 @@ type AuthState = {
     user: AuthUser;
     organization?: AuthOrganization | null;
     activeOrganizationId: string;
+    memberships?: AuthMembership[];
     role: AuthRole;
     tokens: AuthTokens;
   }) => void;
@@ -34,6 +36,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       organization: null,
       activeOrganizationId: null,
+      memberships: [],
       role: null,
       tokens: null,
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
@@ -45,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
           user: session.user,
           organization: session.organization ?? null,
           activeOrganizationId: session.activeOrganizationId,
+          memberships: session.memberships ?? [],
           role: session.role,
           tokens: session.tokens
         }),
@@ -53,6 +57,7 @@ export const useAuthStore = create<AuthState>()(
           user: null,
           organization: null,
           activeOrganizationId: null,
+          memberships: [],
           role: null,
           tokens: null
         })
@@ -63,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         organization: state.organization,
         activeOrganizationId: state.activeOrganizationId,
+        memberships: state.memberships,
         role: state.role,
         tokens: state.tokens
       }),
