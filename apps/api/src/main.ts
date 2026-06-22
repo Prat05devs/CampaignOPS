@@ -14,11 +14,19 @@ async function bootstrap() {
       return origin.trim().replace(/\/+$/, "");
     }
   };
+  const defaultOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://campaign-ops-nine.vercel.app"
+  ];
   const allowedOrigins = new Set(
-    configService
-      .get<string>("WEB_ORIGINS", "http://localhost:3000,http://localhost:3001")
-      .split(",")
-      .map((origin) => origin.trim())
+    [
+      ...defaultOrigins,
+      ...configService
+        .get<string>("WEB_ORIGINS", "")
+        .split(",")
+        .map((origin) => origin.trim())
+    ]
       .filter(Boolean)
       .map(normalizeOrigin)
   );
