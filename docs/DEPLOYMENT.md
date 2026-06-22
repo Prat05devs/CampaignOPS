@@ -115,10 +115,10 @@ Root Directory:
 apps/web
 
 Install Command:
-pnpm install --frozen-lockfile
+cd ../.. && pnpm install --frozen-lockfile
 
 Build Command:
-pnpm build
+cd ../.. && pnpm deploy:web:build
 
 Output Directory:
 .next
@@ -130,7 +130,16 @@ Environment variable:
 NEXT_PUBLIC_API_URL=https://your-api-domain.onrender.com/api
 ```
 
-If Vercel cannot resolve the workspace package `@campaignops/shared`, use the repo root as the Vercel root instead:
+If Vercel shows a platform-level `404: NOT_FOUND`, check that the project root is `apps/web`, not `apps/api` and not the repository root.
+
+The commands above intentionally step back to the repository root because the monorepo build needs:
+
+- root `package.json`
+- `pnpm-workspace.yaml`
+- `packages/shared`
+- `prisma/schema.prisma`
+
+Avoid this setup unless Vercel support specifically asks for it:
 
 ```bash
 Root Directory:

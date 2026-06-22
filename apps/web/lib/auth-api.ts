@@ -12,6 +12,7 @@ export type AuthUser = {
 export type AuthOrganization = {
   id: string;
   name: string;
+  profileImageUrl?: string | null;
   defaultCurrency: string;
   timezone: string;
 };
@@ -24,6 +25,7 @@ export type AuthTokens = {
 export type LoginResponse = {
   user: AuthUser;
   activeOrganizationId: string;
+  organization: AuthOrganization;
   role: "ADMIN" | "MANAGER" | "MEMBER";
   tokens: AuthTokens;
 };
@@ -32,6 +34,17 @@ export type SignupResponse = {
   user: AuthUser;
   organization: AuthOrganization;
   tokens: AuthTokens;
+};
+
+export type InvitationPreview = {
+  acceptedAt: string | null;
+  email: string;
+  expiresAt: string;
+  invitedBy: Pick<AuthUser, "avatarUrl" | "email" | "id" | "name">;
+  organization: AuthOrganization;
+  revokedAt: string | null;
+  role: "ADMIN" | "MANAGER" | "MEMBER";
+  status: "PENDING" | "ACCEPTED" | "REVOKED" | "EXPIRED";
 };
 
 export function login(input: { email: string; password: string }) {
@@ -52,6 +65,32 @@ export function signup(input: {
   return apiRequest<SignupResponse>("/auth/signup", {
     method: "POST",
     body: JSON.stringify(input)
+  });
+}
+
+export function getInvitationPreview(inviteToken: string) {
+  return apiRequest<InvitationPreview>(`/auth/invitations/${inviteToken}`);
+}
+
+export function acceptInvitation(
+  inviteToken: string,
+  input: {
+    name: string;
+    password: string;
+    avatarUrl?: string;
+    phone?: string;
+  }
+) {
+  return apiRequest<LoginResponse>(`/auth/invitations/${inviteToken}/accept`, {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function acceptInvitationWithCurrentUser(inviteToken: string, accessToken: string) {
+  return apiRequest<LoginResponse>(`/auth/invitations/${inviteToken}/accept-existing`, {
+    accessToken,
+    method: "POST"
   });
 }
 

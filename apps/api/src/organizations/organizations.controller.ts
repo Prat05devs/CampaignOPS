@@ -5,6 +5,7 @@ import { Roles } from "../auth/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AuthenticatedUser } from "../auth/types/authenticated-user";
+import { CreateOrganizationInvitationDto } from "./dto/create-organization-invitation.dto";
 import { CreateOrganizationDto } from "./dto/create-organization.dto";
 import { UpdateOrganizationDto } from "./dto/update-organization.dto";
 import { OrganizationsService } from "./organizations.service";
@@ -30,6 +31,32 @@ export class OrganizationsController {
   @Roles(OrganizationRole.ADMIN, OrganizationRole.MANAGER)
   listMembers(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.organizationsService.listMembers(id, user);
+  }
+
+  @Get(":id/invitations")
+  @Roles(OrganizationRole.ADMIN)
+  listInvitations(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.organizationsService.listInvitations(id, user);
+  }
+
+  @Post(":id/invitations")
+  @Roles(OrganizationRole.ADMIN)
+  createInvitation(
+    @Param("id") id: string,
+    @Body() createInvitationDto: CreateOrganizationInvitationDto,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    return this.organizationsService.createInvitation(id, createInvitationDto, user);
+  }
+
+  @Patch(":id/invitations/:invitationId/revoke")
+  @Roles(OrganizationRole.ADMIN)
+  revokeInvitation(
+    @Param("id") id: string,
+    @Param("invitationId") invitationId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    return this.organizationsService.revokeInvitation(id, invitationId, user);
   }
 
   @Patch(":id")

@@ -1,6 +1,7 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "./decorators/current-user.decorator";
 import { AuthService } from "./auth.service";
+import { AcceptInvitationDto } from "./dto/accept-invitation.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { SignupDto } from "./dto/signup.dto";
@@ -19,6 +20,22 @@ export class AuthController {
   @Post("login")
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Get("invitations/:token")
+  getInvitation(@Param("token") token: string) {
+    return this.authService.getInvitation(token);
+  }
+
+  @Post("invitations/:token/accept")
+  acceptInvitation(@Param("token") token: string, @Body() acceptInvitationDto: AcceptInvitationDto) {
+    return this.authService.acceptInvitation(token, acceptInvitationDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("invitations/:token/accept-existing")
+  acceptInvitationForCurrentUser(@Param("token") token: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.authService.acceptInvitationForCurrentUser(token, user);
   }
 
   @Post("refresh")

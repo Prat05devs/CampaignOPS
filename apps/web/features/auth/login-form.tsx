@@ -45,6 +45,7 @@ export function LoginForm() {
       const response = await login(values);
       setSession({
         user: response.user,
+        organization: response.organization,
         activeOrganizationId: response.activeOrganizationId,
         role: response.role,
         tokens: response.tokens
@@ -91,4 +92,3 @@ export function LoginForm() {
     </form>
   );
 }
-

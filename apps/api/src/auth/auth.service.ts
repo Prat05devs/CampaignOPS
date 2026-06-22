@@ -1,9 +1,11 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import { OrganizationRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { hashInvitationToken } from "../organizations/invitation-token";
 import { PrismaService } from "../prisma/prisma.service";
+import { AcceptInvitationDto } from "./dto/accept-invitation.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { SignupDto } from "./dto/signup.dto";
@@ -86,6 +88,9 @@ export class AuthService {
       where: { email: loginDto.email },
       include: {
         organizationMembers: {
+          include: {
+            organization: true
+          },
           orderBy: {
             createdAt: "asc"
           },
@@ -122,8 +127,223 @@ export class AuthService {
     return {
       user: this.toSafeUser(user),
       activeOrganizationId: membership.organizationId,
+      organization: membership.organization,
       role: membership.role,
       tokens
+    };
+  }
+
+  async getInvitation(inviteToken: string) {
+    const invitation = await this.prisma.organizationInvitation.findUnique({
+      where: { tokenHash: hashInvitationToken(inviteToken) },
+      include: {
+        invitedBy: {
+          select: {
+            avatarUrl: true,
+            email: true,
+            id: true,
+            name: true
+          }
+        },
+        organization: true
+      }
+    });
+
+    if (!invitation) {
+      throw new NotFoundException("Invitation not found.");
+    }
+
+    return {
+      acceptedAt: invitation.acceptedAt,
+      email: invitation.email,
+      expiresAt: invitation.expiresAt,
+      invitedBy: invitation.invitedBy,
+      organization: invitation.organization,
+      revokedAt: invitation.revokedAt,
+      role: invitation.role,
+      status: this.getInvitationStatus(invitation)
+    };
+  }
+
+  async acceptInvitation(inviteToken: string, acceptInvitationDto: AcceptInvitationDto) {
+    const invitation = await this.prisma.organizationInvitation.findUnique({
+      where: { tokenHash: hashInvitationToken(inviteToken) },
+      include: {
+        organization: true
+      }
+    });
+
+    if (!invitation) {
+      throw new NotFoundException("Invitation not found.");
+    }
+
+    const status = this.getInvitationStatus(invitation);
+
+    if (status !== "PENDING") {
+      throw new BadRequestException(`Invitation is ${status.toLowerCase()}.`);
+    }
+
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: invitation.email },
+      include: {
+        organizationMembers: {
+          where: {
+            organizationId: invitation.organizationId
+          },
+          take: 1
+        }
+      }
+    });
+
+    if (existingUser?.organizationMembers.length) {
+      throw new ConflictException("This account is already part of the workspace.");
+    }
+
+    if (existingUser) {
+      throw new ConflictException("This email already has an account. Sign in before accepting workspace invites.");
+    }
+
+    const passwordHash = await bcrypt.hash(acceptInvitationDto.password, 12);
+    const now = new Date();
+    const { organization, user } = await this.prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          avatarUrl: acceptInvitationDto.avatarUrl,
+          email: invitation.email,
+          name: acceptInvitationDto.name,
+          passwordHash,
+          phone: acceptInvitationDto.phone
+        }
+      });
+
+      await tx.organizationMember.create({
+        data: {
+          invitedAt: invitation.createdAt,
+          joinedAt: now,
+          organizationId: invitation.organizationId,
+          role: invitation.role,
+          userId: createdUser.id
+        }
+      });
+
+      const acceptedInvitation = await tx.organizationInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          acceptedAt: now,
+          acceptedById: createdUser.id
+        },
+        include: {
+          organization: true
+        }
+      });
+
+      return {
+        organization: acceptedInvitation.organization,
+        user: createdUser
+      };
+    });
+
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      organizationId: organization.id,
+      role: invitation.role
+    });
+
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      activeOrganizationId: organization.id,
+      organization,
+      role: invitation.role,
+      tokens,
+      user: this.toSafeUser(user)
+    };
+  }
+
+  async acceptInvitationForCurrentUser(inviteToken: string, currentUser: AuthenticatedUser) {
+    const invitation = await this.prisma.organizationInvitation.findUnique({
+      where: { tokenHash: hashInvitationToken(inviteToken) },
+      include: {
+        organization: true
+      }
+    });
+
+    if (!invitation) {
+      throw new NotFoundException("Invitation not found.");
+    }
+
+    const status = this.getInvitationStatus(invitation);
+
+    if (status !== "PENDING") {
+      throw new BadRequestException(`Invitation is ${status.toLowerCase()}.`);
+    }
+
+    if (invitation.email !== currentUser.email.toLowerCase()) {
+      throw new UnauthorizedException("This invitation belongs to another email address.");
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: currentUser.sub },
+      include: {
+        organizationMembers: {
+          where: {
+            organizationId: invitation.organizationId
+          },
+          take: 1
+        }
+      }
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User session is not valid.");
+    }
+
+    if (user.organizationMembers.length) {
+      throw new ConflictException("This account is already part of the workspace.");
+    }
+
+    const now = new Date();
+    const organization = await this.prisma.$transaction(async (tx) => {
+      await tx.organizationMember.create({
+        data: {
+          invitedAt: invitation.createdAt,
+          joinedAt: now,
+          organizationId: invitation.organizationId,
+          role: invitation.role,
+          userId: user.id
+        }
+      });
+
+      const acceptedInvitation = await tx.organizationInvitation.update({
+        where: { id: invitation.id },
+        data: {
+          acceptedAt: now,
+          acceptedById: user.id
+        },
+        include: {
+          organization: true
+        }
+      });
+
+      return acceptedInvitation.organization;
+    });
+
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      organizationId: organization.id,
+      role: invitation.role
+    });
+
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+
+    return {
+      activeOrganizationId: organization.id,
+      organization,
+      role: invitation.role,
+      tokens,
+      user: this.toSafeUser(user)
     };
   }
 
@@ -226,6 +446,26 @@ export class AuthService {
     } catch {
       throw new UnauthorizedException("Invalid or expired refresh token.");
     }
+  }
+
+  private getInvitationStatus(invitation: {
+    acceptedAt: Date | null;
+    expiresAt: Date;
+    revokedAt: Date | null;
+  }) {
+    if (invitation.acceptedAt) {
+      return "ACCEPTED";
+    }
+
+    if (invitation.revokedAt) {
+      return "REVOKED";
+    }
+
+    if (invitation.expiresAt.getTime() < Date.now()) {
+      return "EXPIRED";
+    }
+
+    return "PENDING";
   }
 
   private toSafeUser(user: {

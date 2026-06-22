@@ -222,6 +222,8 @@ model User {
   activityLogs        ActivityLog[]
   contentItems        ContentItem[]        @relation("ContentOwner")
   outreachTemplates   OutreachTemplate[]   @relation("OutreachTemplateCreatedBy")
+  sentInvitations      OrganizationInvitation[] @relation("OrganizationInvitationInvitedBy")
+  acceptedInvitations  OrganizationInvitation[] @relation("OrganizationInvitationAcceptedBy")
 }
 
 model Organization {
@@ -245,6 +247,7 @@ model Organization {
   playbookEntries    PlaybookEntry[]
   knowledgeDocuments KnowledgeDocument[]
   promptTemplates    PromptTemplate[]
+  invitations        OrganizationInvitation[]
 }
 
 model OrganizationMember {
@@ -261,6 +264,29 @@ model OrganizationMember {
 
   @@unique([organizationId, userId])
   @@index([userId])
+}
+
+model OrganizationInvitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  invitedById    String
+  acceptedById   String?
+  email          String
+  role           OrganizationRole @default(MEMBER)
+  tokenHash      String           @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy      User             @relation("OrganizationInvitationInvitedBy", fields: [invitedById], references: [id])
+  acceptedBy     User?            @relation("OrganizationInvitationAcceptedBy", fields: [acceptedById], references: [id])
+
+  @@index([organizationId, email])
+  @@index([email])
+  @@index([invitedById])
+  @@index([acceptedById])
 }
 
 model Event {
