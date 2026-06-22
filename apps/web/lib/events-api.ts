@@ -25,6 +25,21 @@ export type CampaignEvent = {
   updatedAt: string;
 };
 
+export type PlaybookEntry = {
+  id: string;
+  organizationId: string;
+  eventId: string | null;
+  eventType: EventCategory;
+  scale: EventScaleTier;
+  city: string | null;
+  budgetRange: string | null;
+  learningsJson: unknown;
+  vendorNotesJson: unknown;
+  riskNotesJson: unknown;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type CreateEventInput = {
   title: string;
   objective?: string;
@@ -43,6 +58,15 @@ export type CreateEventInput = {
   status?: EventStatus;
 };
 
+export type SaveEventDebriefInput = {
+  summary?: string;
+  whatWorked?: string[];
+  whatToImprove?: string[];
+  reusableChecklist?: string[];
+  vendorNotes?: string[];
+  riskNotes?: string[];
+};
+
 export function listEvents(accessToken: string) {
   return apiRequest<CampaignEvent[]>("/events", {
     accessToken
@@ -57,6 +81,14 @@ export function getEvent(id: string, accessToken: string) {
 
 export function createEvent(input: CreateEventInput, accessToken: string) {
   return apiRequest<CampaignEvent>("/events", {
+    accessToken,
+    body: JSON.stringify(input),
+    method: "POST"
+  });
+}
+
+export function saveEventDebrief(eventId: string, input: SaveEventDebriefInput, accessToken: string) {
+  return apiRequest<PlaybookEntry>(`/events/${eventId}/debrief`, {
     accessToken,
     body: JSON.stringify(input),
     method: "POST"

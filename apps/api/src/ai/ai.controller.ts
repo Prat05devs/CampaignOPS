@@ -54,4 +54,24 @@ export class AiController {
   ) {
     return this.aiService.convertOutputToTasks(eventId, outputId, user);
   }
+
+  @Post("ai-outputs/:outputId/convert/budget")
+  @Roles(OrganizationRole.ADMIN, OrganizationRole.MANAGER)
+  convertOutputToBudget(
+    @Param("eventId") eventId: string,
+    @Param("outputId") outputId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    return this.aiService.convertOutputToBudget(eventId, outputId, user);
+  }
+
+  @Post("ai-outputs/:outputId/convert/outreach")
+  @Roles(OrganizationRole.ADMIN, OrganizationRole.MANAGER)
+  convertOutputToOutreach(
+    @Param("eventId") eventId: string,
+    @Param("outputId") outputId: string,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    return this.aiService.convertOutputToOutreach(eventId, outputId, user);
+  }
 }

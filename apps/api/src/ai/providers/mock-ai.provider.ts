@@ -8,14 +8,19 @@ export class MockAiProvider implements LlmProvider {
     const scaleNote = scaleToOperationsNote(input.scaleTier, pax);
     const stakeholders = Array.isArray(input.stakeholdersJson) ? input.stakeholdersJson.filter(isString) : [];
     const budget = input.estimatedBudgetAmount ? Number(input.estimatedBudgetAmount) : 0;
+    const playbookEntries = input.playbookContext?.entries ?? [];
+    const playbookInsights = buildPlaybookInsights(playbookEntries);
 
     return {
       assumptions: [
         input.startsAt ? "The event starts on the date currently stored in the event record." : "Final event date is not available in current knowledge base.",
         budget ? "Budget planning should stay within the event estimate until actual vendor quotes are added." : "Estimated budget is not available in current knowledge base.",
-        "Vendor names, officer names, legal requirements, confirmed permissions, and exact rates are not invented by the mock AI provider."
+        "Vendor names, officer names, legal requirements, confirmed permissions, and exact rates are not invented by the mock AI provider.",
+        playbookEntries.length
+          ? "Prior playbook entries are used as internal learning context, but current event details still need human confirmation."
+          : "No matching prior playbook entry was available for this event type and scale."
       ],
-      confidenceLevel: "MEDIUM",
+      confidenceLevel: playbookEntries.length ? "HIGH" : "MEDIUM",
       eventFlow: [
         "Event intake and requirement confirmation",
         "Venue, permissions, and vendor readiness check",
@@ -28,7 +33,8 @@ export class MockAiProvider implements LlmProvider {
         "Create entry, registration, backstage, vendor, and emergency contact checklist.",
         "Confirm power, sound, light, seating, signage, drinking water, and movement routes.",
         "Prepare event-day communication group and escalation path.",
-        "Keep permissions and vendor quotations attached in the Files tab."
+        "Keep permissions and vendor quotations attached in the Files tab.",
+        ...playbookInsights.reusableChecklist.map((item) => `From prior playbook: ${item}`)
       ],
       manpowerPlan: buildManpowerPlan(input.scaleTier, pax),
       mediaCoveragePlan: [
@@ -53,6 +59,11 @@ export class MockAiProvider implements LlmProvider {
         "Learnings and reusable playbook entries"
       ],
       riskChecklist: [
+        ...playbookInsights.riskNotes.map((riskNote) => ({
+          mitigation: "Review the prior event note and assign an owner before execution.",
+          needsConfirmation: true,
+          risk: `Prior playbook risk: ${riskNote}`
+        })),
         {
           mitigation: "Confirm setup buffer, vendor call times, and venue access in writing.",
           needsConfirmation: true,
@@ -75,14 +86,19 @@ export class MockAiProvider implements LlmProvider {
         }
       ],
       schemaVersion: "campaignops.eventPlan.v1",
-      sourcesUsed: ["Current event record", "CampaignOps locked event taxonomy", "Mock provider operational template"],
+      sourcesUsed: [
+        "Current event record",
+        "CampaignOps locked event taxonomy",
+        "Mock provider operational template",
+        ...playbookEntries.map((entry, index) => `Playbook entry ${index + 1}: ${entry.city ?? "Unknown city"} / ${entry.scale} / ${entry.budgetRange ?? "Unknown budget"}`)
+      ],
       stageStallRequirements: [
         "Backdrop or event identity placement based on brand context.",
         "Registration or help desk table if audience movement needs control.",
         "Stage seating, mic count, and display requirements must be confirmed from final flow.",
         "Directional signage and sponsor/stakeholder visibility only after approval."
       ],
-      strategySummary: `${input.title} should be run as a ${input.subtype} under ${formatEnum(input.category)} for ${formatEnum(input.scaleTier)} scale. ${scaleNote} The plan should prioritize clear ownership, vendor readiness, stakeholder communication, and post-event learning capture.`,
+      strategySummary: `${input.title} should be run as a ${input.subtype} under ${formatEnum(input.category)} for ${formatEnum(input.scaleTier)} scale. ${scaleNote} The plan should prioritize clear ownership, vendor readiness, stakeholder communication, and post-event learning capture.${playbookInsights.summary ? ` Prior playbook signal: ${playbookInsights.summary}` : ""}`,
       vendorRequirements: buildVendorRequirements(input.scaleTier),
       workflowType: "EVENT_PLAN",
       knownFromProvidedData: [
@@ -95,10 +111,26 @@ export class MockAiProvider implements LlmProvider {
         `Expected pax: ${input.expectedPax ?? "Not available in current knowledge base."}`,
         `Budget: ${budget ? `INR ${budget}` : "Not available in current knowledge base."}`,
         `Objective: ${input.objective ?? "Not available in current knowledge base."}`,
-        `Stakeholders: ${stakeholders.length ? stakeholders.join(", ") : "Not available in current knowledge base."}`
+        `Stakeholders: ${stakeholders.length ? stakeholders.join(", ") : "Not available in current knowledge base."}`,
+        `Matching playbook entries: ${playbookEntries.length}`,
+        ...playbookInsights.whatWorked.map((item) => `Prior playbook worked: ${item}`),
+        ...playbookInsights.whatToImprove.map((item) => `Prior playbook improve: ${item}`)
       ]
     };
   }
+}
+
+function buildPlaybookInsights(entries: NonNullable<GenerateEventPlanInput["playbookContext"]>["entries"]) {
+  const latest = entries[0];
+
+  return {
+    reusableChecklist: uniqueStrings(entries.flatMap((entry) => entry.learnings.reusableChecklist)).slice(0, 4),
+    riskNotes: uniqueStrings(entries.flatMap((entry) => entry.riskNotes)).slice(0, 3),
+    summary: latest?.learnings.summary ?? "",
+    vendorNotes: uniqueStrings(entries.flatMap((entry) => entry.vendorNotes)).slice(0, 3),
+    whatToImprove: uniqueStrings(entries.flatMap((entry) => entry.learnings.whatToImprove)).slice(0, 4),
+    whatWorked: uniqueStrings(entries.flatMap((entry) => entry.learnings.whatWorked)).slice(0, 4)
+  };
 }
 
 function buildManpowerPlan(scaleTier: string, pax: number): EventPlanOutput["manpowerPlan"] {
@@ -170,4 +202,18 @@ function formatEnum(value: string) {
 
 function isString(value: unknown): value is string {
   return typeof value === "string" && Boolean(value.trim());
+}
+
+function uniqueStrings(values: string[]) {
+  const seen = new Set<string>();
+  return values
+    .map((value) => value.trim())
+    .filter((value) => {
+      if (!value || seen.has(value.toLowerCase())) {
+        return false;
+      }
+
+      seen.add(value.toLowerCase());
+      return true;
+    });
 }

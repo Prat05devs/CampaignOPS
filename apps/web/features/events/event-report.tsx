@@ -1,19 +1,21 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { BarChart3, CheckSquare, FileText, IndianRupee, UsersRound } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BarChart3, BookOpenCheck, CheckSquare, FileText, IndianRupee, UsersRound } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { getEventAnalytics } from "../../lib/analytics-api";
 import { ApiError } from "../../lib/api-client";
 import { refreshSession } from "../../lib/auth-api";
 import { listBudgetItems } from "../../lib/budget-api";
 import { listContentItems } from "../../lib/content-api";
-import { type CampaignEvent, type EventCategory, type EventScaleTier } from "../../lib/events-api";
+import { saveEventDebrief, type CampaignEvent, type EventCategory, type EventScaleTier } from "../../lib/events-api";
 import { listTasks, type TaskStatus } from "../../lib/tasks-api";
 
 type EventReportProps = {
   accessToken: string;
+  canManageOperations: boolean;
   event: CampaignEvent;
   onSessionExpired: () => void;
   onTokensRefreshed: (tokens: { accessToken: string; refreshToken: string }) => void;
@@ -47,11 +49,20 @@ const taskStatuses: TaskStatus[] = ["TODO", "IN_PROGRESS", "REVIEW", "DONE", "BL
 
 export function EventReport({
   accessToken,
+  canManageOperations,
   event,
   onSessionExpired,
   onTokensRefreshed,
   refreshToken
 }: EventReportProps) {
+  const queryClient = useQueryClient();
+  const [debriefSummary, setDebriefSummary] = useState("");
+  const [whatWorked, setWhatWorked] = useState("");
+  const [whatToImprove, setWhatToImprove] = useState("");
+  const [reusableChecklist, setReusableChecklist] = useState("");
+  const [vendorNotes, setVendorNotes] = useState("");
+  const [riskNotes, setRiskNotes] = useState("");
+
   const analyticsQuery = useQuery({
     queryFn: () => getEventAnalytics(event.id, accessToken),
     queryKey: ["events", event.id, "analytics", accessToken]
@@ -99,6 +110,34 @@ export function EventReport({
     refreshToken,
     tasksQuery.error
   ]);
+
+  const saveDebriefMutation = useMutation({
+    mutationFn: async () => {
+      const input = {
+        reusableChecklist: linesToList(reusableChecklist),
+        riskNotes: linesToList(riskNotes),
+        summary: debriefSummary,
+        vendorNotes: linesToList(vendorNotes),
+        whatToImprove: linesToList(whatToImprove),
+        whatWorked: linesToList(whatWorked)
+      };
+
+      try {
+        return await saveEventDebrief(event.id, input, accessToken);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 401) {
+          throw error;
+        }
+
+        const refreshedSession = await refreshSession(refreshToken);
+        onTokensRefreshed(refreshedSession.tokens);
+        return saveEventDebrief(event.id, input, refreshedSession.tokens.accessToken);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["events", event.id, "activity-logs"] });
+    }
+  });
 
   const analytics = analyticsQuery.data;
   const tasks = tasksQuery.data ?? [];
@@ -258,6 +297,64 @@ export function EventReport({
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Post-event Debrief To Playbook</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Save reusable learnings from this event for future CampaignOps planning.
+              </p>
+            </div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-campaign-orange/10 text-campaign-orange">
+              <BookOpenCheck className="h-4 w-4" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {canManageOperations ? (
+            <>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium uppercase text-muted-foreground">Debrief summary</span>
+                <textarea
+                  className="min-h-24 rounded-md border border-campaign-mist bg-white px-3 py-2 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+                  onChange={(inputEvent) => setDebriefSummary(inputEvent.target.value)}
+                  placeholder="What actually happened, what changed from plan, and what should be remembered?"
+                  value={debriefSummary}
+                />
+              </label>
+              <div className="grid gap-3 md:grid-cols-2">
+                <DebriefTextarea label="What worked" onChange={setWhatWorked} value={whatWorked} />
+                <DebriefTextarea label="What to improve" onChange={setWhatToImprove} value={whatToImprove} />
+                <DebriefTextarea label="Reusable checklist" onChange={setReusableChecklist} value={reusableChecklist} />
+                <DebriefTextarea label="Vendor notes" onChange={setVendorNotes} value={vendorNotes} />
+                <DebriefTextarea label="Risk notes" onChange={setRiskNotes} value={riskNotes} />
+              </div>
+              {saveDebriefMutation.isSuccess ? (
+                <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  Debrief saved to the playbook for this event type and scale.
+                </div>
+              ) : null}
+              {saveDebriefMutation.isError ? (
+                <div className="rounded-md border border-campaign-orange/30 bg-campaign-orange/10 px-3 py-2 text-sm text-campaign-orange">
+                  {saveDebriefMutation.error.message}
+                </div>
+              ) : null}
+              <div className="flex justify-end">
+                <Button disabled={saveDebriefMutation.isPending} onClick={() => saveDebriefMutation.mutate()} type="button">
+                  <BookOpenCheck className="h-4 w-4" />
+                  {saveDebriefMutation.isPending ? "Saving..." : "Save Debrief"}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-md border border-campaign-mist bg-white px-4 py-3 text-sm text-muted-foreground">
+              Your role can view reports, but only managers and workspace admins can save event learnings to the playbook.
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }
@@ -305,6 +402,35 @@ function ReportBar({ label, total, value }: { label: string; total: number; valu
       </div>
     </div>
   );
+}
+
+function DebriefTextarea({
+  label,
+  onChange,
+  value
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <label className="grid gap-1">
+      <span className="text-xs font-medium uppercase text-muted-foreground">{label}</span>
+      <textarea
+        className="min-h-28 rounded-md border border-campaign-mist bg-white px-3 py-2 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="One point per line"
+        value={value}
+      />
+    </label>
+  );
+}
+
+function linesToList(value: string) {
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function formatCurrency(value: number) {

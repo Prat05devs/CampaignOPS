@@ -1,12 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, CheckCircle2, ClipboardCheck, Pencil, Sparkles } from "lucide-react";
+import { Bot, CheckCircle2, ClipboardCheck, IndianRupee, Megaphone, Pencil, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import {
   acceptAIOutput,
+  convertAIOutputToBudget,
+  convertAIOutputToOutreach,
   convertAIOutputToTasks,
   generateEventPlan,
   listAIOutputs,
@@ -161,6 +163,48 @@ export function EventAIPlan({
     }
   });
 
+  const convertToBudgetMutation = useMutation({
+    mutationFn: async (outputId: string) => {
+      try {
+        return await convertAIOutputToBudget(eventId, outputId, accessToken);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 401) {
+          throw error;
+        }
+
+        const refreshedSession = await refreshSession(refreshToken);
+        onTokensRefreshed(refreshedSession.tokens);
+        return convertAIOutputToBudget(eventId, outputId, refreshedSession.tokens.accessToken);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["events", eventId, "budget-items"] });
+      await queryClient.invalidateQueries({ queryKey: ["events", eventId, "activity-logs"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics", "event", eventId] });
+    }
+  });
+
+  const convertToOutreachMutation = useMutation({
+    mutationFn: async (outputId: string) => {
+      try {
+        return await convertAIOutputToOutreach(eventId, outputId, accessToken);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 401) {
+          throw error;
+        }
+
+        const refreshedSession = await refreshSession(refreshToken);
+        onTokensRefreshed(refreshedSession.tokens);
+        return convertAIOutputToOutreach(eventId, outputId, refreshedSession.tokens.accessToken);
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["events", eventId, "outreach-templates"] });
+      await queryClient.invalidateQueries({ queryKey: ["events", eventId, "activity-logs"] });
+      await queryClient.invalidateQueries({ queryKey: ["analytics", "event", eventId] });
+    }
+  });
+
   const outputs = outputsQuery.data ?? [];
   const eventPlanOutputs = outputs.filter((output) => output.outputType === "EVENT_PLAN");
   const summary = useMemo(
@@ -235,6 +279,32 @@ export function EventAIPlan({
         </div>
       ) : null}
 
+      {convertToBudgetMutation.isSuccess ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          Created {convertToBudgetMutation.data.convertedCount} budget item
+          {convertToBudgetMutation.data.convertedCount === 1 ? "" : "s"} from the approved AI plan.
+        </div>
+      ) : null}
+
+      {convertToBudgetMutation.isError ? (
+        <div className="rounded-md border border-campaign-orange/30 bg-campaign-orange/10 px-3 py-2 text-sm text-campaign-orange">
+          {convertToBudgetMutation.error.message}
+        </div>
+      ) : null}
+
+      {convertToOutreachMutation.isSuccess ? (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          Created {convertToOutreachMutation.data.convertedCount} outreach draft
+          {convertToOutreachMutation.data.convertedCount === 1 ? "" : "s"} from the approved AI plan.
+        </div>
+      ) : null}
+
+      {convertToOutreachMutation.isError ? (
+        <div className="rounded-md border border-campaign-orange/30 bg-campaign-orange/10 px-3 py-2 text-sm text-campaign-orange">
+          {convertToOutreachMutation.error.message}
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>AI Event Plans</CardTitle>
@@ -248,6 +318,8 @@ export function EventAIPlan({
                   editorError={editingOutputId === output.id ? editorError : null}
                   editorValue={editingOutputId === output.id ? editorValue : ""}
                   isAccepting={acceptMutation.isPending}
+                  isConvertingBudget={convertToBudgetMutation.isPending}
+                  isConvertingOutreach={convertToOutreachMutation.isPending}
                   isConverting={convertToTasksMutation.isPending}
                   isEditing={editingOutputId === output.id}
                   isSaving={updateMutation.isPending}
@@ -259,6 +331,8 @@ export function EventAIPlan({
                     setEditorValue("");
                   }}
                   onEditorChange={setEditorValue}
+                  onConvertToBudget={() => convertToBudgetMutation.mutate(output.id)}
+                  onConvertToOutreach={() => convertToOutreachMutation.mutate(output.id)}
                   onConvertToTasks={() => convertToTasksMutation.mutate(output.id)}
                   onSaveEdit={() => saveEditedOutput(output.id)}
                   onStartEdit={() => startEditing(output)}
@@ -282,11 +356,15 @@ function AIPlanCard({
   editorError,
   editorValue,
   isAccepting,
+  isConvertingBudget,
+  isConvertingOutreach,
   isConverting,
   isEditing,
   isSaving,
   onAccept,
   onCancelEdit,
+  onConvertToBudget,
+  onConvertToOutreach,
   onConvertToTasks,
   onEditorChange,
   onSaveEdit,
@@ -297,11 +375,15 @@ function AIPlanCard({
   editorError: string | null;
   editorValue: string;
   isAccepting: boolean;
+  isConvertingBudget: boolean;
+  isConvertingOutreach: boolean;
   isConverting: boolean;
   isEditing: boolean;
   isSaving: boolean;
   onAccept: () => void;
   onCancelEdit: () => void;
+  onConvertToBudget: () => void;
+  onConvertToOutreach: () => void;
   onConvertToTasks: () => void;
   onEditorChange: (value: string) => void;
   onSaveEdit: () => void;
@@ -371,7 +453,7 @@ function AIPlanCard({
       )}
 
       {canManageOperations ? (
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex flex-wrap justify-end gap-2">
           <Button onClick={onStartEdit} type="button" variant="outline">
             <Pencil className="h-4 w-4" />
             Edit JSON
@@ -381,6 +463,14 @@ function AIPlanCard({
           </Button>
           <Button disabled={!output.isAccepted || isConverting} onClick={onConvertToTasks} type="button">
             {isConverting ? "Converting..." : "Convert to Tasks"}
+          </Button>
+          <Button disabled={!output.isAccepted || isConvertingBudget} onClick={onConvertToBudget} type="button" variant="outline">
+            <IndianRupee className="h-4 w-4" />
+            {isConvertingBudget ? "Converting..." : "Budget Items"}
+          </Button>
+          <Button disabled={!output.isAccepted || isConvertingOutreach} onClick={onConvertToOutreach} type="button" variant="outline">
+            <Megaphone className="h-4 w-4" />
+            {isConvertingOutreach ? "Converting..." : "Outreach Drafts"}
           </Button>
         </div>
       ) : null}

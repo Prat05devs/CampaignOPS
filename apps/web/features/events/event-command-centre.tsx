@@ -500,6 +500,7 @@ export function EventCommandCentre({ eventId }: EventCommandCentreProps) {
             ) : eventQuery.data && activeTab === "Report" ? (
               <EventReport
                 accessToken={tokens.accessToken}
+                canManageOperations={canManageOperations}
                 event={eventQuery.data}
                 onSessionExpired={() => {
                   clearSession();

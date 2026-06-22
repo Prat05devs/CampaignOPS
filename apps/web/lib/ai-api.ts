@@ -1,4 +1,6 @@
 import { apiRequest } from "./api-client";
+import type { BudgetItem } from "./budget-api";
+import type { OutreachTemplate } from "./outreach-api";
 import type { CampaignTask } from "./tasks-api";
 
 export type AIOutputType =
@@ -53,6 +55,16 @@ export type ConvertAIOutputToTasksResponse = {
   tasks: CampaignTask[];
 };
 
+export type ConvertAIOutputToBudgetResponse = {
+  budgetItems: BudgetItem[];
+  convertedCount: number;
+};
+
+export type ConvertAIOutputToOutreachResponse = {
+  convertedCount: number;
+  templates: OutreachTemplate[];
+};
+
 export function listAIOutputs(eventId: string, accessToken: string) {
   return apiRequest<AIOutput[]>(`/events/${eventId}/ai-outputs`, {
     accessToken
@@ -88,6 +100,20 @@ export function acceptAIOutput(eventId: string, outputId: string, accessToken: s
 
 export function convertAIOutputToTasks(eventId: string, outputId: string, accessToken: string) {
   return apiRequest<ConvertAIOutputToTasksResponse>(`/events/${eventId}/ai-outputs/${outputId}/convert/tasks`, {
+    accessToken,
+    method: "POST"
+  });
+}
+
+export function convertAIOutputToBudget(eventId: string, outputId: string, accessToken: string) {
+  return apiRequest<ConvertAIOutputToBudgetResponse>(`/events/${eventId}/ai-outputs/${outputId}/convert/budget`, {
+    accessToken,
+    method: "POST"
+  });
+}
+
+export function convertAIOutputToOutreach(eventId: string, outputId: string, accessToken: string) {
+  return apiRequest<ConvertAIOutputToOutreachResponse>(`/events/${eventId}/ai-outputs/${outputId}/convert/outreach`, {
     accessToken,
     method: "POST"
   });

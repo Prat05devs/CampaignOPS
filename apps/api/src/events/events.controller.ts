@@ -6,6 +6,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AuthenticatedUser } from "../auth/types/authenticated-user";
 import { CreateEventDto } from "./dto/create-event.dto";
+import { SaveEventDebriefDto } from "./dto/save-event-debrief.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { EventsService } from "./events.service";
 
@@ -38,5 +39,15 @@ export class EventsController {
     @CurrentUser() user: AuthenticatedUser
   ) {
     return this.eventsService.update(id, user, updateEventDto);
+  }
+
+  @Post(":id/debrief")
+  @Roles(OrganizationRole.ADMIN, OrganizationRole.MANAGER)
+  saveDebrief(
+    @Param("id") id: string,
+    @Body() saveEventDebriefDto: SaveEventDebriefDto,
+    @CurrentUser() user: AuthenticatedUser
+  ) {
+    return this.eventsService.saveDebrief(id, user, saveEventDebriefDto);
   }
 }

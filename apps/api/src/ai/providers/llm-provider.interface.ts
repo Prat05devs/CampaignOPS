@@ -13,6 +13,23 @@ export type GenerateEventPlanInput = {
   subtype: string;
   title: string;
   venue: string | null;
+  playbookContext?: {
+    entries: Array<{
+      budgetRange: string | null;
+      city: string | null;
+      createdAt: string;
+      eventId: string | null;
+      learnings: {
+        reusableChecklist: string[];
+        summary: string;
+        whatToImprove: string[];
+        whatWorked: string[];
+      };
+      riskNotes: string[];
+      scale: string;
+      vendorNotes: string[];
+    }>;
+  };
 };
 
 export type EventPlanOutput = {
