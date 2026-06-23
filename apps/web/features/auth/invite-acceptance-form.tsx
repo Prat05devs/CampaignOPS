@@ -20,6 +20,10 @@ const inviteSignupSchema = z.object({
 
 type InviteSignupInput = z.infer<typeof inviteSignupSchema>;
 
+const authInputClass =
+  "h-12 w-full rounded-full border border-[#D8D3C2] bg-white px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15 disabled:bg-[#F5F2E8] disabled:text-muted-foreground";
+const authButtonClass = "h-12 w-full rounded-full bg-[#0F3D28] text-sm font-semibold text-white hover:bg-[#0B2F1F]";
+
 export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
   const router = useRouter();
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -159,7 +163,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
         ) : null}
 
         <Button
-          className="w-full"
+          className={authButtonClass}
           disabled={!isPending || !inviteMatchesSession || isAcceptingCurrentUser}
           onClick={() => void acceptWithCurrentAccount()}
           type="button"
@@ -172,7 +176,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-      <div className="rounded-md border border-campaign-mist bg-campaign-cream/60 p-3">
+      <div className="rounded-[24px] border border-[#D8D3C2] bg-white/70 p-4">
         <p className="text-sm font-semibold">{invitation.organization.name}</p>
         <p className="mt-1 text-xs text-muted-foreground">
           Invited as {roleLabel(invitation.role)} by {invitation.invitedBy.name}
@@ -185,12 +189,12 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
         </p>
       ) : null}
 
-      <div className="flex items-center gap-4 rounded-md border border-input bg-white p-3">
+      <div className="flex items-center gap-4 rounded-[24px] border border-[#D8D3C2] bg-white/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-campaign-mist text-sm font-semibold text-campaign-ink">
           {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : <BrandLogo className="h-16 w-16 rounded-full" />}
         </div>
         <div className="min-w-0 flex-1">
-          <label className="inline-flex cursor-pointer items-center rounded-md border border-input bg-white px-3 py-2 text-sm font-medium transition hover:bg-campaign-mist">
+          <label className="inline-flex cursor-pointer items-center rounded-full border border-[#D8D3C2] bg-white px-4 py-2 text-sm font-semibold transition hover:bg-[#F5F2E8]">
             Upload profile image
             <input
               accept="image/*"
@@ -210,7 +214,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
           Email
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-campaign-cream/60 px-3 text-sm text-muted-foreground"
+          className={authInputClass}
           disabled
           id="invite-email"
           value={invitation.email}
@@ -222,7 +226,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
           Name
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           disabled={!isPending}
           id="name"
           {...register("name")}
@@ -235,7 +239,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
           Phone
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           disabled={!isPending}
           id="phone"
           {...register("phone")}
@@ -247,7 +251,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
           Password
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           disabled={!isPending}
           id="password"
           type="password"
@@ -258,7 +262,7 @@ export function InviteAcceptanceForm({ inviteToken }: { inviteToken: string }) {
 
       {error && <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-      <Button className="w-full" disabled={isSubmitting || !isPending} type="submit">
+      <Button className={authButtonClass} disabled={isSubmitting || !isPending} type="submit">
         {isSubmitting ? "Joining workspace..." : "Join workspace"}
       </Button>
     </form>

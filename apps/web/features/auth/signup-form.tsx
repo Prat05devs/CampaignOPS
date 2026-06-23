@@ -21,6 +21,10 @@ const signupSchema = z.object({
 
 type SignupInput = z.infer<typeof signupSchema>;
 
+const authInputClass =
+  "h-12 w-full rounded-full border border-[#D8D3C2] bg-white px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15";
+const authButtonClass = "h-12 w-full rounded-full bg-[#0F3D28] text-sm font-semibold text-white hover:bg-[#0B2F1F]";
+
 export function SignupForm() {
   const router = useRouter();
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -87,12 +91,12 @@ export function SignupForm() {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-      <div className="flex items-center gap-4 rounded-md border border-input bg-white p-3">
+      <div className="flex items-center gap-4 rounded-[24px] border border-[#D8D3C2] bg-white/85 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)]">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-campaign-mist text-sm font-semibold text-campaign-ink">
           {avatarUrl ? <img alt="" className="h-full w-full object-cover" src={avatarUrl} /> : <BrandLogo className="h-16 w-16 rounded-full" />}
         </div>
         <div className="min-w-0 flex-1">
-          <label className="inline-flex cursor-pointer items-center rounded-md border border-input bg-white px-3 py-2 text-sm font-medium transition hover:bg-campaign-mist">
+          <label className="inline-flex cursor-pointer items-center rounded-full border border-[#D8D3C2] bg-white px-4 py-2 text-sm font-semibold transition hover:bg-[#F5F2E8]">
             Upload profile image
             <input
               accept="image/*"
@@ -112,7 +116,7 @@ export function SignupForm() {
             Name
           </label>
           <input
-            className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+            className={authInputClass}
             id="name"
             {...register("name")}
           />
@@ -124,7 +128,7 @@ export function SignupForm() {
             Phone
           </label>
           <input
-            className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+            className={authInputClass}
             id="phone"
             {...register("phone")}
           />
@@ -136,7 +140,7 @@ export function SignupForm() {
           Organization
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           id="organizationName"
           {...register("organizationName")}
         />
@@ -148,7 +152,7 @@ export function SignupForm() {
           Email
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           id="email"
           type="email"
           {...register("email")}
@@ -161,7 +165,7 @@ export function SignupForm() {
           Password
         </label>
         <input
-          className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm outline-none transition focus:border-campaign-orange focus:ring-2 focus:ring-campaign-orange/15"
+          className={authInputClass}
           id="password"
           type="password"
           {...register("password")}
@@ -171,7 +175,7 @@ export function SignupForm() {
 
       {error && <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">{error}</p>}
 
-      <Button className="w-full" disabled={isSubmitting} type="submit">
+      <Button className={authButtonClass} disabled={isSubmitting} type="submit">
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
     </form>
