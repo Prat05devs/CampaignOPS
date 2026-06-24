@@ -64,6 +64,20 @@ export function login(input: { email: string; password: string; organizationId?:
   });
 }
 
+export function requestPasswordReset(input: { email: string }) {
+  return apiRequest<{ devResetUrl?: string; success: boolean }>("/auth/password-reset/request", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function resetPassword(input: { password: string; token: string }) {
+  return apiRequest<{ success: boolean }>("/auth/password-reset/confirm", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
 export function listWorkspaces(accessToken: string) {
   return apiRequest<AuthMembership[]>("/auth/workspaces", {
     accessToken

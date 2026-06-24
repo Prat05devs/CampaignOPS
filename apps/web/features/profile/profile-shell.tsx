@@ -21,7 +21,30 @@ import {
 import { updateUserProfile } from "../../lib/users-api";
 import { useAuthStore } from "../../stores/auth-store";
 
-export function ProfileShell() {
+type ProfileScreen = "profile" | "team" | "settings";
+
+const screenContent: Record<ProfileScreen, { description: string; title: string }> = {
+  profile: {
+    description: "Manage your personal details and profile image.",
+    title: "Account Settings"
+  },
+  settings: {
+    description: "Manage workspace identity, currency, timezone, and active workspace context.",
+    title: "Workspace Settings"
+  },
+  team: {
+    description: "Review workspace access, invite teammates, and track pending invitations.",
+    title: "Team Members"
+  }
+};
+
+const screenLinks: Array<{ href: string; key: ProfileScreen; label: string }> = [
+  { href: "/profile", key: "profile", label: "Profile" },
+  { href: "/team", key: "team", label: "Team" },
+  { href: "/settings", key: "settings", label: "Settings" }
+];
+
+export function ProfileShell({ screen = "profile" }: { screen?: ProfileScreen }) {
   const router = useRouter();
   const {
     activeOrganizationId,
@@ -296,6 +319,7 @@ export function ProfileShell() {
   const workspaces = workspacesQuery.data ?? [];
   const canManageOrganization = role === "ADMIN";
   const currentOrganization = organizationQuery.data ?? organization;
+  const currentScreen = screenContent[screen];
 
   return (
     <main className="min-h-screen bg-[#E4E4E4] p-4 text-[#10141A] md:p-6">
@@ -307,9 +331,9 @@ export function ProfileShell() {
                 <ArrowLeft className="h-3.5 w-3.5" />
                 Dashboard
               </Link>
-              <h1 className="text-2xl font-semibold md:text-3xl">Workspace Profile</h1>
+              <h1 className="text-2xl font-semibold md:text-3xl">{currentScreen.title}</h1>
               <p className="text-sm text-[#10141A]/55">
-                {currentOrganization?.name ?? "CampaignOps"} / {role}
+                {currentOrganization?.name ?? "CampaignOps"} / {role} / {currentScreen.description}
               </p>
             </div>
             <button
@@ -323,7 +347,24 @@ export function ProfileShell() {
           </div>
         </header>
 
-        <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
+        <nav className="grid gap-2 rounded-md border border-white/70 bg-white/45 p-2 shadow-[0_18px_60px_rgba(16,20,26,0.07)] backdrop-blur-xl sm:grid-cols-3">
+          {screenLinks.map((item) => (
+            <Link
+              className={
+                item.key === screen
+                  ? "rounded-full bg-[#10141A] px-4 py-2 text-center text-sm font-semibold text-white shadow-[0_14px_32px_rgba(16,20,26,0.18)]"
+                  : "rounded-full border border-white/70 bg-white/55 px-4 py-2 text-center text-sm font-semibold text-[#10141A]/65 transition hover:bg-white hover:text-[#10141A]"
+              }
+              href={item.href}
+              key={item.key}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        {screen === "settings" ? (
+          <section className="rounded-md border border-white/70 bg-white/45 p-4 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
           <div className="mb-3 flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-[#10141A]/55" />
@@ -395,9 +436,11 @@ export function ProfileShell() {
               {switchWorkspaceMutation.error.message}
             </p>
           ) : null}
-        </section>
+          </section>
+        ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
+        {screen === "profile" ? (
+          <div className="grid gap-4 lg:grid-cols-[0.82fr_1.18fr]">
           <section className="rounded-md border border-white/70 bg-white/45 p-5 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
             <div className="flex flex-col items-center text-center">
               <div className="relative">
@@ -502,9 +545,12 @@ export function ProfileShell() {
               </button>
             </form>
           </section>
-        </div>
+          </div>
+        ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+        {screen === "settings" || screen === "team" ? (
+          <div className="grid gap-4">
+          {screen === "settings" ? (
           <section className="rounded-md border border-white/70 bg-white/45 p-5 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
             <form
               className="space-y-4"
@@ -597,7 +643,9 @@ export function ProfileShell() {
               </button>
             </form>
           </section>
+          ) : null}
 
+          {screen === "team" ? (
           <section className="rounded-md border border-white/70 bg-white/45 p-5 shadow-[0_24px_80px_rgba(16,20,26,0.09)] backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -776,7 +824,9 @@ export function ProfileShell() {
               </div>
             ) : null}
           </section>
-        </div>
+          ) : null}
+          </div>
+        ) : null}
       </section>
     </main>
   );

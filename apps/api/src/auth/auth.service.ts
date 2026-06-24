@@ -3,11 +3,14 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService, type JwtSignOptions } from "@nestjs/jwt";
 import { OrganizationRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { createHash, randomBytes } from "crypto";
 import { hashInvitationToken } from "../organizations/invitation-token";
 import { PrismaService } from "../prisma/prisma.service";
 import { AcceptInvitationDto } from "./dto/accept-invitation.dto";
 import { LoginDto } from "./dto/login.dto";
 import { RefreshTokenDto } from "./dto/refresh-token.dto";
+import { RequestPasswordResetDto } from "./dto/request-password-reset.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { SignupDto } from "./dto/signup.dto";
 import { SwitchOrganizationDto } from "./dto/switch-organization.dto";
 import { AuthenticatedUser } from "./types/authenticated-user";
@@ -143,6 +146,97 @@ export class AuthService {
       role: membership.role,
       tokens
     };
+  }
+
+  async requestPasswordReset(requestPasswordResetDto: RequestPasswordResetDto) {
+    const email = requestPasswordResetDto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true
+      }
+    });
+
+    if (!user) {
+      return { success: true };
+    }
+
+    const resetToken = this.createOpaqueToken();
+    const tokenHash = this.hashPasswordResetToken(resetToken);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordResetToken.updateMany({
+        where: {
+          userId: user.id,
+          usedAt: null
+        },
+        data: {
+          usedAt: new Date()
+        }
+      });
+
+      await tx.passwordResetToken.create({
+        data: {
+          expiresAt,
+          tokenHash,
+          userId: user.id
+        }
+      });
+    });
+
+    const response: { devResetUrl?: string; success: true } = { success: true };
+
+    if (this.configService.get<string>("NODE_ENV") !== "production") {
+      const appUrl = this.configService.get<string>("APP_URL", "http://localhost:3001");
+      response.devResetUrl = `${appUrl.replace(/\/$/, "")}/reset-password?token=${resetToken}`;
+    }
+
+    return response;
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const tokenHash = this.hashPasswordResetToken(resetPasswordDto.token);
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: {
+          select: {
+            id: true
+          }
+        }
+      }
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException("Password reset link is invalid or expired.");
+    }
+
+    const passwordHash = await bcrypt.hash(resetPasswordDto.password, 12);
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: resetToken.user.id },
+        data: {
+          passwordHash,
+          refreshTokenExpiresAt: null,
+          refreshTokenHash: null
+        }
+      });
+
+      await tx.passwordResetToken.updateMany({
+        where: {
+          userId: resetToken.user.id,
+          usedAt: null
+        },
+        data: {
+          usedAt: now
+        }
+      });
+    });
+
+    return { success: true };
   }
 
   async listWorkspaces(currentUser: AuthenticatedUser) {
@@ -526,6 +620,14 @@ export class AuthService {
         refreshTokenExpiresAt
       }
     });
+  }
+
+  private createOpaqueToken() {
+    return randomBytes(32).toString("base64url");
+  }
+
+  private hashPasswordResetToken(token: string) {
+    return createHash("sha256").update(token).digest("hex");
   }
 
   private async verifyRefreshToken(refreshToken: string) {
